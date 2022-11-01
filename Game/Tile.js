@@ -2,10 +2,12 @@ class Tile {
   constructor(x, y, width, height, color, strokeColor) {
     this.x = x;
     this.y = y;
+    this.id = this.x.toString() + this.y.toString();
     this.width = width;
     this.height = height;
     this.color = color;
-    this.strokeColor = strokeColor;
+    this.debugColor = "orange";
+    this.strokeColor = undefined;
   }
 
   drawRect = (ctx) => {
@@ -20,23 +22,66 @@ class Tile {
     ctx.fillText("1", this.x + this.width / 2, this.y + this.height / 2);
   };
 
-  draw = (ctx) => {
+  draw = (ctx, game) => {
+    this.setPaintingColor(game);
     this.drawRect(ctx);
+
     this.drawText(ctx);
+    // this.debugPosition(ctx, game);
   };
 
   getRandomColor = () => {
     return Math.floor(Math.random() * 220);
   };
 
-  paintTile = (ctx, game) => {
-    ctx.fillStyle = "yellow";
+  updateTile = (ctx, x, y, width, height) => {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.draw(ctx);
+  };
 
-    const minX = this.x;
-    const maxX = this.x + this.width;
+  // TODO: Fixme
 
-    const minY = this.y;
-    const maxY = this.y + this.height;
+  debugPosition = (ctx, game) => {
+    if (game.wantsToDrag) {
+      return;
+    }
+    const distanceMovedX = game.dragStart.x - game.dragEnd.x;
+    const distanceMovedY = game.dragStart.y - game.dragEnd.y;
+    const minX = (this.x - game.gap) * game.cameraZoom;
+    const maxX =
+      (this.x - game.gap) * game.cameraZoom + this.width - distanceMovedX;
+
+    const minY = (this.y - game.gap) * game.cameraZoom;
+    const maxY =
+      (this.y - game.gap) * game.cameraZoom + this.height - distanceMovedY;
+    ctx.fillStyle = this.debugColor;
+    ctx.strokeStyle = this.debugColor;
+    ctx.strokeRect(
+      this.x,
+      this.y,
+      this.width * game.cameraZoom,
+      this.height * game.cameraZoom
+    );
+  };
+
+  setPaintingColor = (game) => {
+    if (game.wantsToDrag) {
+      return;
+    }
+    const distanceMovedX = game.dragStart.x - game.dragEnd.x;
+    const distanceMovedY = game.dragStart.y - game.dragEnd.y;
+    const minX = (this.x - game.gap) * game.cameraZoom;
+    const maxX = (this.x + this.width - game.gap) * game.cameraZoom;
+
+    const minY = (this.y - game.gap) * game.cameraZoom;
+    const maxY = (this.y + this.height - game.gap) * game.cameraZoom;
+
+    if (this.id === "5050") {
+      console.log(minX, maxX, minY, maxY, game.mouse.x);
+    }
 
     if (!game.mouse.down) {
       return;
@@ -48,7 +93,7 @@ class Tile {
       game.mouse.y >= minY &&
       game.mouse.y <= maxY
     ) {
-      ctx.fillRect(this.x, this.y, this.width, this.height);
+      this.color = "yellow";
     }
   };
 }
