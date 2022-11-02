@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import Game from "../Game/Game";
-import save from "../Game/save.json";
+import { createClient } from "@supabase/supabase-js";
+import supabaseClient from "../config/supabase";
 
-const GameCanvas = () => {
+const GameCanvas = ({ pixelBoard }) => {
   const canvasRef = useRef(null);
 
   const [colors, setColors] = useState([]);
@@ -10,6 +11,7 @@ const GameCanvas = () => {
   const [game, setGame] = useState(null);
 
   useEffect(() => {
+    if (!pixelBoard) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
 
@@ -17,8 +19,8 @@ const GameCanvas = () => {
     setGame(game);
     game.addEventListeners(ctx);
 
-    game.init(22, 2);
-    // game.loadFromJson(JSON.stringify(save));
+    // game.init(22, 2);
+    game.loadFromJson(pixelBoard.data);
 
     // setColors(game.colors.sort((a, b) => a.key - b.key));
     setColors(game.colors);
@@ -30,7 +32,7 @@ const GameCanvas = () => {
       requestAnimationFrame(animate);
     };
     animate();
-  }, []);
+  }, [pixelBoard]);
 
   useEffect(() => {
     if (!game) {
@@ -46,6 +48,16 @@ const GameCanvas = () => {
 
     game.currentColor = pickedColor;
   }, [game, pickedColor]);
+
+  const saveBoard = async () => {
+    console.log(game.tiles);
+    const { error } = await supabaseClient
+      .from("pixelboard")
+      .update({ data: JSON.stringify(game.tiles) })
+      .eq("name", "My Awesome Drawing");
+
+    console.log(error);
+  };
 
   return (
     <div>
@@ -67,6 +79,9 @@ const GameCanvas = () => {
             </button>
           );
         })}
+        <button style={{ color: "darkred" }} onClick={saveBoard}>
+          Save Board
+        </button>
       </div>
     </div>
   );
