@@ -1,17 +1,26 @@
 class Tile {
-  constructor(x, y, width, height, color, strokeColor) {
+  constructor(x, y, width, height, color, correctColor, strokeColor, colorKey) {
     this.x = x;
     this.y = y;
     this.id = this.x.toString() + this.y.toString();
     this.width = width;
     this.height = height;
     this.color = color;
+    this.correctColor = {
+      key: correctColor.key,
+      hex: correctColor.hex,
+    };
+
     this.debugColor = "orange";
-    this.strokeColor = undefined;
+    this.strokeColor = strokeColor;
+    this.paintedCorrectly = false;
+    this.colorKey = colorKey;
   }
 
   drawRect = (ctx) => {
-    ctx.fillStyle = this.color;
+    ctx.fillStyle = this.color.hex;
+    ctx.strokeStyle = this.strokeColor;
+    ctx.strokeRect(this.x, this.y, this.width, this.height);
     ctx.fillRect(this.x, this.y, this.width, this.height);
   };
 
@@ -19,7 +28,11 @@ class Tile {
     ctx.fillStyle = "black";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("1", this.x + this.width / 2, this.y + this.height / 2);
+    ctx.fillText(
+      this.colorKey,
+      this.x + this.width / 2,
+      this.y + this.height / 2
+    );
   };
 
   draw = (ctx, game) => {
@@ -42,46 +55,18 @@ class Tile {
     this.draw(ctx);
   };
 
-  // TODO: Fixme
-
-  debugPosition = (ctx, game) => {
-    if (game.wantsToDrag) {
-      return;
-    }
-    const distanceMovedX = game.dragStart.x - game.dragEnd.x;
-    const distanceMovedY = game.dragStart.y - game.dragEnd.y;
-    const minX = (this.x - game.gap) * game.cameraZoom;
-    const maxX =
-      (this.x - game.gap) * game.cameraZoom + this.width - distanceMovedX;
-
-    const minY = (this.y - game.gap) * game.cameraZoom;
-    const maxY =
-      (this.y - game.gap) * game.cameraZoom + this.height - distanceMovedY;
-    ctx.fillStyle = this.debugColor;
-    ctx.strokeStyle = this.debugColor;
-    ctx.strokeRect(
-      this.x,
-      this.y,
-      this.width * game.cameraZoom,
-      this.height * game.cameraZoom
-    );
-  };
-
   setPaintingColor = (game) => {
     if (game.wantsToDrag) {
       return;
     }
-    const distanceMovedX = game.dragStart.x - game.dragEnd.x;
-    const distanceMovedY = game.dragStart.y - game.dragEnd.y;
-    const minX = (this.x - game.gap) * game.cameraZoom;
-    const maxX = (this.x + this.width - game.gap) * game.cameraZoom;
 
-    const minY = (this.y - game.gap) * game.cameraZoom;
-    const maxY = (this.y + this.height - game.gap) * game.cameraZoom;
+    const minX = (this.x - game.gap + game.translateX) * game.cameraZoom;
+    const maxX =
+      (this.x + this.width - game.gap + game.translateX) * game.cameraZoom;
 
-    if (this.id === "5050") {
-      console.log(minX, maxX, minY, maxY, game.mouse.x);
-    }
+    const minY = (this.y - game.gap + game.translateY) * game.cameraZoom;
+    const maxY =
+      (this.y + this.height - game.gap + game.translateY) * game.cameraZoom;
 
     if (!game.mouse.down) {
       return;
@@ -93,7 +78,13 @@ class Tile {
       game.mouse.y >= minY &&
       game.mouse.y <= maxY
     ) {
-      this.color = "yellow";
+      this.color = game.currentColor;
+
+      if (this.color === this.correctColor) {
+        this.paintedCorrectly = true;
+      } else {
+        this.paintedCorrectly = false;
+      }
     }
   };
 }

@@ -1,9 +1,11 @@
 import Tile from "./Tile";
+import _ from "lodash";
 
 class Game {
+  currentColor;
   tiles = [];
   gap = 2;
-  cameraZoom = 2;
+  cameraZoom = 1;
   lastZoom = this.cameraZoom;
   SCROLL_SENSITIVITY = 0.0005;
   zoom = 5;
@@ -11,6 +13,12 @@ class Game {
   oldTileSize = 30;
   isDragging = false;
   wantsToDrag = false;
+  translateX = 0;
+  translateY = 0;
+  colorKeys = [];
+  // array of hex codes of used colors
+  colors = [];
+
   dragStart = {
     x: 0,
     y: 0,
@@ -31,19 +39,118 @@ class Game {
     };
   }
 
+  init = (tileSize, gap) => {
+    this.gap = gap;
+    this.tileSize = tileSize;
+    for (let i = this.tileSize; i < this.width; i += tileSize) {
+      for (let j = this.tileSize; j < this.height; j += tileSize) {
+        const correctColor = {
+          key: i > 100 ? 1 : 2,
+          hex: i > 100 ? "#fffeee" : "#cccddd",
+        };
+        const color = {
+          key: i > 100 ? 1 : 2,
+          hex: i > 100 ? "#fffeee" : "#cccddd",
+        };
+        const tile = new Tile(
+          i,
+          j,
+          tileSize - this.gap,
+          tileSize - this.gap,
+          color,
+          correctColor,
+          "black",
+          correctColor.key
+        );
+        this.tiles.push(tile);
+      }
+    }
+    this.generateUniqueColors();
+    console.log("unique Colors: ", this.colors);
+    this.currentColor = this.colors[0];
+    console.log(this.currentColor);
+  };
+
+  update = (ctx) => {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+    this.translateX = window.innerWidth / 2;
+    this.translateY = window.innerHeight / 2;
+
+    // ctx.translate(this.translateX, this.translateY);
+    this.translateX = -window.innerWidth / 2 + this.cameraOffset.x;
+    this.translateY = -window.innerHeight / 2 + this.cameraOffset.y;
+
+    ctx.scale(this.cameraZoom, this.cameraZoom);
+    ctx.translate(this.translateX, this.translateY);
+    ctx.clearRect(0, 0, window.width, window.height);
+
+    this.drawTiles(ctx);
+  };
+
+  save = () => {
+    // TODO: Save to supabase?
+    // console.log(JSON.stringify(this.tiles));
+  };
+
+  loadFromJson = (json) => {
+    // TODO: Load from supabase?
+
+    const tiles = JSON.parse(json);
+
+    // adding the first color in
+
+    tiles.forEach((tile) => {
+      const newTile = new Tile(
+        tile.x,
+        tile.y,
+        tile.width,
+        tile.height,
+        tile.color,
+        tile.correctColor,
+        tile.strokeColor,
+        tile.colorKey
+      );
+      this.tiles.push(newTile);
+    });
+
+    // Find unique color keys
+
+    this.generateUniqueColors();
+    this.currentColor = this.colors[0];
+
+    // sort it
+
+    // save it
+  };
+
+  generateUniqueColors = () => {
+    const allColors = this.tiles.map((tile) => tile.correctColor);
+    this.colors = this.getUniqueColors(allColors).sort((a, b) => a.key - b.key);
+  };
+
+  getUniqueColors = (colors) => {
+    return _.uniqWith(colors, _.isEqual);
+  };
+
   getEventLocation = (e) => {
     if (e.touches && e.touches.length == 1) {
       return { x: e.touches[0].clientX, y: e.touches[0].clientY };
     } else if (e.clientX && e.clientY) {
-      return { x: e.clientX, y: e.clientY };
+      return { x: this.mouse.x, y: this.mouse.y };
     }
   };
 
   onPointerDown = (e) => {
     // if mouse is down start draggin, but only if space bar is hit
 
+    if (e.which === 2) {
+      this.wantsToDrag = true;
+    }
+
     if (this.wantsToDrag) {
       this.isDragging = true;
+
       this.dragStart.x =
         this.getEventLocation(e).x / this.cameraZoom - this.cameraOffset.x;
       this.dragStart.y =
@@ -65,7 +172,6 @@ class Game {
   };
 
   onPointerMove = (e) => {
-    console.log(this.isDragging, this.wantsToDrag);
     if (this.isDragging && this.wantsToDrag) {
       this.cameraOffset.x =
         this.getEventLocation(e).x / this.cameraZoom - this.dragStart.x;
@@ -109,27 +215,10 @@ class Game {
     } else if (e.keyCode === 32 && e.type === "keyup") {
       this.wantsToDrag = false;
     }
-
-    console.log(this.wantsToDrag);
   };
 
-  adjustZoom = (zoomAmount, zoomFactor) => {
+  adjustZoom = (zoomAmount) => {
     this.cameraZoom -= zoomAmount;
-  };
-
-  update = (ctx) => {
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
-
-    // ctx.translate(window.innerWidth / 2, window.innerHeight / 2);
-    ctx.scale(this.cameraZoom, this.cameraZoom);
-    ctx.translate(
-      -window.innerWidth / 2 + this.cameraOffset.x,
-      -window.innerHeight / 2 + this.cameraOffset.y
-    );
-    ctx.clearRect(0, 0, window.width, window.height);
-    // this.drawDebugBg(ctx, "blue");
-    this.drawTiles(ctx);
   };
 
   drawTiles = (ctx) => {
@@ -138,37 +227,9 @@ class Game {
     });
   };
 
-  updateTiles = (ctx) => {
-    ctx.clearRect(0, 0, window.width, window.height);
-
+  draw = (ctx) => {
     this.tiles.forEach((tile) => {
-      tile.updateTile(ctx, tile.x, tile.y, tile.width, tile.height);
-    });
-  };
-
-  zoomTiles = (ctx) => {
-    ctx.clearRect(0, 0, this.width, this.height);
-
-    this.tiles.forEach((tile) => {
-      const newX = (tile.x / this.oldTileSize) * this.tileSize;
-      const newY = (tile.y / this.oldTileSize) * this.tileSize;
-
-      if (!(newX > this.width || newY > this.height)) {
-        // only draw if we are inside bounds
-        tile.updateTile(
-          ctx,
-          newX,
-          newY,
-          this.tileSize - this.gap,
-          this.tileSize - this.gap
-        );
-      }
-    });
-  };
-
-  paintTiles = (ctx) => {
-    this.tiles.forEach((tile) => {
-      tile.paintTile(ctx, this);
+      tile.draw(ctx);
     });
   };
 
@@ -179,30 +240,6 @@ class Game {
 
   getRandomColor = () => {
     return Math.floor(Math.random() * 220);
-  };
-
-  init = (tileSize, gap) => {
-    this.gap = gap;
-    this.tileSize = tileSize;
-    for (let i = this.tileSize; i < this.width; i += tileSize) {
-      for (let j = this.tileSize; j < this.height; j += tileSize) {
-        const tile = new Tile(
-          i,
-          j,
-          tileSize - this.gap,
-          tileSize - this.gap,
-          `white`,
-          "black"
-        );
-        this.tiles.push(tile);
-      }
-    }
-  };
-
-  draw = (ctx) => {
-    this.tiles.forEach((tile) => {
-      tile.draw(ctx);
-    });
   };
 }
 

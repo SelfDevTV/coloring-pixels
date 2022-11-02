@@ -4,5 +4,5 @@
 
 [] Color Picker
 [x] Create Canvas React Component
-[] Zooming?
-[] Dragging if zoomed in etc.
+[x] Zooming?
+[x] Dragging if zoomed in etc.

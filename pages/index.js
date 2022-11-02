@@ -7,7 +7,8 @@ export default function Home() {
   };
   return (
     <div>
-      <button onClick={handleClick}>Test</button>
+      <h1>Coloring Pixels</h1>
+
       <GameCanvas />
     </div>
   );
