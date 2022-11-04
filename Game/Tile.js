@@ -6,10 +6,7 @@ class Tile {
     this.width = width;
     this.height = height;
     this.color = color;
-    this.correctColor = {
-      key: correctColor.key,
-      hex: correctColor.hex,
-    };
+    this.correctColor = correctColor;
 
     this.debugColor = "orange";
     this.strokeColor = strokeColor;
@@ -18,7 +15,11 @@ class Tile {
   }
 
   drawRect = (ctx) => {
-    ctx.fillStyle = this.color.hex;
+    try {
+      ctx.fillStyle = this.color.hex;
+    } catch (e) {
+      console.log(this);
+    }
     ctx.strokeStyle = this.strokeColor;
     ctx.strokeRect(this.x, this.y, this.width, this.height);
     ctx.fillRect(this.x, this.y, this.width, this.height);
@@ -28,8 +29,9 @@ class Tile {
     ctx.fillStyle = "black";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    // if the color key = 0 it's an empty tile, dont draw text
     ctx.fillText(
-      this.colorKey,
+      this.correctColor.key === 0 ? "" : this.correctColor.key,
       this.x + this.width / 2,
       this.y + this.height / 2
     );
@@ -38,7 +40,7 @@ class Tile {
   draw = (ctx, game) => {
     this.setPaintingColor(game);
     this.drawRect(ctx);
-
+    if (!game.playMode || this.paintedCorrectly) return;
     this.drawText(ctx);
     // this.debugPosition(ctx, game);
   };
@@ -79,11 +81,30 @@ class Tile {
       game.mouse.y <= maxY
     ) {
       this.color = game.currentColor;
+      if (game.currentColor === undefined) {
+        console.log("game.currentColor is undefined?", game);
+      }
 
-      if (this.color === this.correctColor) {
-        this.paintedCorrectly = true;
+      if (!game.playMode) {
+        this.correctColor = game.currentColor;
       } else {
-        this.paintedCorrectly = false;
+        if (this.color.hex == this.correctColor.hex) {
+          console.log(
+            "CORRECT",
+            this.correctColor,
+            this.color,
+            game.currentColor
+          );
+          this.paintedCorrectly = true;
+        } else {
+          console.log(
+            "INCORRECT",
+            this.correctColor,
+            this.color,
+            game.currentColor
+          );
+          this.paintedCorrectly = false;
+        }
       }
     }
   };

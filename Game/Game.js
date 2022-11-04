@@ -2,6 +2,7 @@ import Tile from "./Tile";
 import _ from "lodash";
 
 class Game {
+  playMode;
   currentColor;
   tiles = [];
   gap = 2;
@@ -27,11 +28,16 @@ class Game {
     x: 0,
     y: 0,
   };
-  cameraOffset = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+
   constructor(width, height, canvas) {
     this.canvas = canvas;
     this.width = width;
     this.height = height;
+    this.playMode = false;
+    this.cameraOffset = {
+      x: window.innerWidth / 2 + this.width / 2,
+      y: window.innerHeight / 2,
+    };
     this.mouse = {
       x: undefined,
       y: undefined,
@@ -44,31 +50,28 @@ class Game {
     this.tileSize = tileSize;
     for (let i = this.tileSize; i < this.width; i += tileSize) {
       for (let j = this.tileSize; j < this.height; j += tileSize) {
-        const correctColor = {
-          key: i > 100 ? 1 : 2,
-          hex: i > 100 ? "#fffeee" : "#cccddd",
-        };
-        const color = {
-          key: i > 100 ? 1 : 2,
-          hex: i > 100 ? "#fffeee" : "#cccddd",
-        };
+        // const correctColor = {
+        //   key: i > 100 ? 1 : 2,
+        //   hex: i > 100 ? "#fffeee" : "#cccddd",
+        // };
+        // const color = {
+        //   key: i > 100 ? 1 : 2,
+        //   hex: i > 100 ? "#fffeee" : "#cccddd",
+        // };
         const tile = new Tile(
           i,
           j,
           tileSize - this.gap,
           tileSize - this.gap,
-          color,
-          correctColor,
+          { key: 0, hex: "#ffffff" },
+          null,
           "black",
-          correctColor.key
+          null
         );
         this.tiles.push(tile);
       }
     }
     this.generateUniqueColors();
-    console.log("unique Colors: ", this.colors);
-    this.currentColor = this.colors[0];
-    console.log(this.currentColor);
   };
 
   update = (ctx) => {
@@ -84,8 +87,33 @@ class Game {
     ctx.scale(this.cameraZoom, this.cameraZoom);
     ctx.translate(this.translateX, this.translateY);
     ctx.clearRect(0, 0, window.width, window.height);
+    // if (this.currentColor === undefined) {
+    //   console.log("why no currentcolor", this);
+    // }
+
+    this.generateUniqueColors();
 
     this.drawTiles(ctx);
+  };
+
+  addUsedColors = () => {
+    // loop over all tiles and add each unique color to it
+  };
+
+  getOnlyPaintedTiles = () => {
+    if (this.playMode) {
+      return this.tiles.filter((tile) => {
+        if (tile.correctColor.key !== 0 && tile.correctColor.key !== -1) {
+          return tile;
+        }
+      });
+    } else {
+      return this.tiles.filter((tile) => {
+        if (tile.color.key !== 0 && tile.color.key !== -1) {
+          return tile;
+        }
+      });
+    }
   };
 
   save = () => {
@@ -106,10 +134,10 @@ class Game {
         tile.y,
         tile.width,
         tile.height,
+        { key: -1, hex: "#ffffff" },
         tile.color,
-        tile.correctColor,
         tile.strokeColor,
-        tile.colorKey
+        tile.color.key
       );
       this.tiles.push(newTile);
     });
@@ -117,7 +145,12 @@ class Game {
     // Find unique color keys
 
     this.generateUniqueColors();
+    console.log("all unique colors: ", this.colors);
+    console.log("all tiles: ", this.tiles);
+    console.log("Current color: ", this.currentColor);
+
     this.currentColor = this.colors[0];
+    console.log("current color from game itself", this.currentColor);
 
     // sort it
 
@@ -125,7 +158,15 @@ class Game {
   };
 
   generateUniqueColors = () => {
-    const allColors = this.tiles.map((tile) => tile.correctColor);
+    let allColors;
+    const paintedTilesColors = this.getOnlyPaintedTiles();
+
+    if (this.playMode) {
+      allColors = paintedTilesColors.map((tile) => tile.correctColor);
+    } else {
+      allColors = paintedTilesColors.map((tile) => tile.color);
+    }
+
     this.colors = this.getUniqueColors(allColors).sort((a, b) => a.key - b.key);
   };
 
@@ -183,6 +224,7 @@ class Game {
   addEventListeners = (ctx) => {
     var rect = this.canvas.getBoundingClientRect();
     window.addEventListener("mousedown", (e) => {
+      console.log("mouse down");
       e.preventDefault();
       this.mouse.x = e.pageX - rect.left;
       this.mouse.y = e.pageY - rect.top;

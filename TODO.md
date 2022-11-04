@@ -1,5 +1,6 @@
 [x] Refactor Tile and Game
 [x] Add a way to save the board in some way
+[] Create board page - create a new pixel art
 [] Create board from image
 
 [x] Color Picker
