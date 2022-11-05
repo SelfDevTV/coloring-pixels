@@ -4,7 +4,7 @@ import { SketchPicker } from "react-color";
 
 import supabaseClient from "../config/supabase";
 
-const GameCanvas = ({ pixelBoard }) => {
+const GameCanvas = ({ pixelBoard, tileSize = 22 }) => {
   const canvasRef = useRef(null);
 
   const [colors, setColors] = useState([]);
@@ -23,22 +23,19 @@ const GameCanvas = ({ pixelBoard }) => {
   }, []);
 
   useEffect(() => {
-    console.log("Game: ", game);
-    console.log("CTX: ", ctx);
     if (!game || !ctx) return;
 
     game.addEventListeners(ctx);
 
     // if there is an existing pixelBoard draw it else draw an empty board
     if (pixelBoard) {
-      console.log("we are playing");
       game.playMode = true;
       game.loadFromJson(pixelBoard.data);
 
       setColors(game.colors);
     } else {
-      console.log("we are not playing");
-      game.init(22, 2);
+      game.tiles = [];
+      game.init(tileSize, 2, ctx);
       const initialColor = {
         key: 1,
         hex: "#dcfccc",
@@ -51,14 +48,13 @@ const GameCanvas = ({ pixelBoard }) => {
       requestAnimationFrame(animate);
     };
     animate();
-  }, [pixelBoard, game, ctx]);
+  }, [pixelBoard, game, ctx, tileSize]);
 
   useEffect(() => {
     if (!game) {
       return;
     }
     if (pixelBoard) {
-      console.log("pixel board found, game.colors: ", game.colors);
       setPickedColor(game.colors[0]);
     }
   }, [game, pixelBoard]);
@@ -69,7 +65,6 @@ const GameCanvas = ({ pixelBoard }) => {
     }
 
     game.currentColor = pickedColor;
-    console.log("picked color hi", pickedColor);
   }, [game, pickedColor]);
 
   const saveBoard = async () => {
@@ -79,11 +74,8 @@ const GameCanvas = ({ pixelBoard }) => {
       .from("pixelboard")
       .update({ data: JSON.stringify(paintedTiles) })
       .eq("name", "My Awesome Drawing");
-
-    console.log(error);
   };
 
-  // TODO: Find out a way to store unique colors into game colors array
   const renderColorPicker = () => {
     return colors.map((color) => {
       return (
@@ -107,7 +99,10 @@ const GameCanvas = ({ pixelBoard }) => {
     // first get the current colors and see if it's a new one
 
     const currentColors = game.colors;
-    console.log("game colors after click: ", game.colors);
+    if (color.key === 0) {
+      setPickedColor(color);
+      return;
+    }
 
     if (currentColors.length === 0) {
       return;
@@ -119,25 +114,31 @@ const GameCanvas = ({ pixelBoard }) => {
     ) {
       // create a new color with an incremented key
 
-      console.log("Color not found yet, adding it");
       const lastColor = currentColors[currentColors.length - 1];
-      console.log("last color: ", lastColor);
+
       const newColor = {
         key: lastColor.key + 1,
         hex: color.hex,
       };
       setPickedColor(newColor);
-      console.log("new color: ", newColor);
     } else {
       // just set picked color and don't create a new color
-      console.log("color found, adding this color to current color");
+
       setPickedColor(color);
     }
   };
 
   const renderColorWheel = () => {
     return (
-      <SketchPicker color={pickedColor} onChangeComplete={handleColorChange} />
+      <>
+        <SketchPicker
+          color={pickedColor}
+          onChangeComplete={handleColorChange}
+        />
+        <button onClick={() => handleColorChange({ key: 0, hex: "#ffffff" })}>
+          Rubber
+        </button>
+      </>
     );
   };
 
@@ -146,9 +147,7 @@ const GameCanvas = ({ pixelBoard }) => {
       <canvas id="canvas" ref={canvasRef} />
       <div className="color-picker">
         {pixelBoard ? renderColorPicker() : renderColorWheel()}
-        <button style={{ color: "darkred" }} onClick={saveBoard}>
-          Save Board
-        </button>
+        <button onClick={saveBoard}>Save Board</button>
       </div>
     </div>
   );

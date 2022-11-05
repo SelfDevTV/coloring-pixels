@@ -80,13 +80,15 @@ class Tile {
       game.mouse.y >= minY &&
       game.mouse.y <= maxY
     ) {
+      // TODO: Fixme, it behaves weird when removing color
       this.color = game.currentColor;
-      if (game.currentColor === undefined) {
-        console.log("game.currentColor is undefined?", game);
-      }
 
       if (!game.playMode) {
-        this.correctColor = game.currentColor;
+        if (game.currentColor.key === 0) {
+          this.correctColor = null;
+        } else {
+          this.correctColor = game.currentColor;
+        }
       } else {
         if (this.color.hex == this.correctColor.hex) {
           console.log(

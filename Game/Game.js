@@ -45,7 +45,12 @@ class Game {
     };
   }
 
-  init = (tileSize, gap) => {
+  init = (tileSize, gap, ctx) => {
+    this.cameraOffset = {
+      x: window.innerWidth / 2 + this.width / 2,
+      y: window.innerHeight / 2,
+    };
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
     this.gap = gap;
     this.tileSize = tileSize;
     for (let i = this.tileSize; i < this.width; i += tileSize) {
@@ -116,11 +121,6 @@ class Game {
     }
   };
 
-  save = () => {
-    // TODO: Save to supabase?
-    // console.log(JSON.stringify(this.tiles));
-  };
-
   loadFromJson = (json) => {
     // TODO: Load from supabase?
 
@@ -145,12 +145,8 @@ class Game {
     // Find unique color keys
 
     this.generateUniqueColors();
-    console.log("all unique colors: ", this.colors);
-    console.log("all tiles: ", this.tiles);
-    console.log("Current color: ", this.currentColor);
 
     this.currentColor = this.colors[0];
-    console.log("current color from game itself", this.currentColor);
 
     // sort it
 
@@ -224,7 +220,6 @@ class Game {
   addEventListeners = (ctx) => {
     var rect = this.canvas.getBoundingClientRect();
     window.addEventListener("mousedown", (e) => {
-      console.log("mouse down");
       e.preventDefault();
       this.mouse.x = e.pageX - rect.left;
       this.mouse.y = e.pageY - rect.top;
