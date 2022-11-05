@@ -22,6 +22,14 @@ const CreatePixelBoard = () => {
     setTileSize(Math.round(100 - val));
   };
 
+  const getTileGap = () => {
+    if (sliderVal === 25) {
+      return 2;
+    } else {
+      return 3;
+    }
+  };
+
   return (
     <Box bgColor="orange.400">
       <Heading size="4xl" textAlign="center">
@@ -54,7 +62,7 @@ const CreatePixelBoard = () => {
         <SliderThumb />
       </Slider>
 
-      <GameCanvas tileSize={tileSize} />
+      <GameCanvas tileSize={tileSize} tileGap={getTileGap()} />
     </Box>
   );
 };

@@ -8,7 +8,7 @@ class Game {
   gap = 2;
   cameraZoom = 1;
   lastZoom = this.cameraZoom;
-  SCROLL_SENSITIVITY = 0.0005;
+  SCROLL_SENSITIVITY = 0.00009;
   zoom = 5;
   tileSize = 30;
   oldTileSize = 30;

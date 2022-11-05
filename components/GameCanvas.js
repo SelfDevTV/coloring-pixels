@@ -4,7 +4,7 @@ import { SketchPicker } from "react-color";
 
 import supabaseClient from "../config/supabase";
 
-const GameCanvas = ({ pixelBoard, tileSize = 22 }) => {
+const GameCanvas = ({ pixelBoard, tileSize = 22, tileGap = 2 }) => {
   const canvasRef = useRef(null);
 
   const [colors, setColors] = useState([]);
@@ -35,7 +35,7 @@ const GameCanvas = ({ pixelBoard, tileSize = 22 }) => {
       setColors(game.colors);
     } else {
       game.tiles = [];
-      game.init(tileSize, 2, ctx);
+      game.init(tileSize, tileGap, ctx);
       const initialColor = {
         key: 1,
         hex: "#dcfccc",
@@ -48,7 +48,7 @@ const GameCanvas = ({ pixelBoard, tileSize = 22 }) => {
       requestAnimationFrame(animate);
     };
     animate();
-  }, [pixelBoard, game, ctx, tileSize]);
+  }, [pixelBoard, game, ctx, tileSize, tileGap]);
 
   useEffect(() => {
     if (!game) {
